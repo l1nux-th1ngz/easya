@@ -28,8 +28,9 @@ WORKING_DIR="$HOME/Documents/calamares-arch-iso"
 mkdir -p "$WORKING_DIR"
 cd "$WORKING_DIR"
 
-# Create a directory to work in
+# Create a directory to work in and mount the ISO
 mkdir -p iso_mount
+mount -o loop "$ISO_FILENAME" iso_mount
 
 # Download the Arch Linux ISO (Replace with a valid URL)
 ISO_URL="http://mirror.arizona.edu/archlinux/iso/2023.10.14/archlinux-2023.10.14-x86_64.iso"
@@ -41,9 +42,6 @@ if [ $? -ne 0 ]; then
     echo "Failed to download the Arch Linux ISO. Please check the URL."
     exit 1
 fi
-
-# Mount the ISO
-mount -o loop "$ISO_FILENAME" iso_mount
 
 # Create necessary directories inside the ISO
 mkdir -p iso_mount/archiso/airootfs/etc/calamares/settings
@@ -70,10 +68,7 @@ mkisofs -o "$ISO_CUSTOMIZED" -b isolinux/isolinux.bin -c isolinux/boot.cat -no-e
 
 # Customize pacman.conf
 echo -e "Customizing pacman.conf"
-sudo sed -i 's/^#Color/Color/' /etc/pacman.conf
-sudo sed -i 's/^#ILoveCandy/ILoveCandy/' /etc/pacman.conf
-sudo sed -i 's/^#VerbosePkgLists/VerbosePkgLists/' /etc/pacman.conf
-sudo sed -i 's/^#ParallelDownloads = 15/ParallelDownloads = 20/' /etc/pacman.conf
+sudo sed -i 's/^#ParallelDownloads = 5/ParallelDownloads = 15/' /etc/pacman.conf
 sudo sed -i '/^#multilib/s/^#//' /etc/pacman.conf
 
 # Customize grub
