@@ -1,0 +1,76 @@
+#!/usr/bin/env bash
+
+# Welcome message
+echo -e "MyArchInstaller - Automated Arch Linux Installer\n"
+
+# Source the configuration file
+source ${HOME}/MyArchInstaller/configs/setup.conf
+
+# Installation type
+if [[ -d "/sys/firmware/efi" ]]; then
+    INSTALL_TYPE="UEFI"
+else
+    INSTALL_TYPE="BIOS"
+fi
+
+# Function to install the base system
+install_base_system() {
+    echo -ne "Installing Base System\n"
+    if [[ ! $DESKTOP_ENV == server ]]; then
+        sed -n '/'$INSTALL_TYPE'/q;p' $HOME/MyArchInstaller/pkg-files/pacman-pkgs.txt | while read line
+        do
+            if [[ ${line} == '--END OF MINIMAL INSTALL--' ]]; then
+                continue
+            fi
+            echo "INSTALLING: ${line}"
+            sudo pacman -S --noconfirm --needed ${line}
+        done
+    fi
+}
+
+# Function to configure mirrors
+configure_mirrors() {
+    echo -ne "Setting up mirrors for optimal download\n"
+    pacman -S --noconfirm --needed pacman-contrib curl
+    pacman -S --noconfirm --needed reflector rsync grub arch-install-scripts git
+    cp /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist.bak
+    nc=$(grep -c ^processor /proc/cpuinfo)
+    echo -ne "You have $nc cores. And changing the makeflags for $nc cores. As well as changing the compression settings.\n"
+    TOTAL_MEM=$(cat /proc/meminfo | grep -i 'memtotal' | grep -o '[[:digit:]]*')
+    if [[ $TOTAL_MEM -gt 8000000 ]]; then
+        sed -i "s/#MAKEFLAGS=\"-j2\"/MAKEFLAGS=\"-j$nc\"/g" /etc/makepkg.conf
+        sed -i "s/COMPRESSXZ=(xz -c -z -)/COMPRESSXZ=(xz -c -T $nc -z -)/g" /etc/makepkg.conf
+    fi
+}
+
+# Function to set up language and locale
+setup_language_and_locale() {
+    echo -ne "Setup Language to US and set locale\n"
+    sed -i 's/^#en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen
+    locale-gen
+    timedatectl --no-ask-password set-timezone ${TIMEZONE}
+    timedatectl --no-ask-password set-ntp 1
+    localectl --no-ask-password set-locale LANG="en_US.UTF-8" LC_TIME="en_US.UTF-8"
+    ln -s /usr/share/zoneinfo/${TIMEZONE} /etc/localtime
+    localectl --no-ask-password set-keymap ${KEYMAP}
+    sed -i 's/^# %wheel ALL=(ALL) NOPASSWD: ALL/%wheel ALL=(ALL) NOPASSWD: ALL/' /etc/sudoers
+    sed -i 's/^# %wheel ALL=(ALL:ALL) NOPASSWD: ALL/%wheel ALL=(ALL:ALL) NOPASSWD: ALL/' /etc/sudoers
+    sed -i 's/^#ParallelDownloads/ParallelDownloads/' /etc/pacman.conf
+    sed -i "/\[multilib\]/,/Include/"'s/^#//' /etc/pacman.conf
+    pacman -Sy --noconfirm --needed
+}
+
+# Function to install microcode
+install_microcode() {
+    echo -ne "Installing Microcode\n"
+    proc_type=$(lscpu)
+    if grep -E "GenuineIntel" <<< ${proc_type}; then
+        echo "Installing Intel microcode"
+        pacman -S --noconfirm --needed intel-ucode
+    elif grep -E "AuthenticAMD" <<< ${proc_type}; then
+        echo "Installing AMD microcode"
+        pacman -S --noconfirm --needed amd-ucode
+    fi
+}
+
+# Continue with the rest of your script...
