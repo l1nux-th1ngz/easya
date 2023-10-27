@@ -1,0 +1,40 @@
+#!/bin/bash
+
+# Create a directory to work in
+mkdir -p /tmp/calamares-arch-iso
+
+# Change to the working directory
+cd /tmp/calamares-arch-iso
+
+# Download the Arch Linux ISO (Replace with the ISO URL you want)
+ISO_URL="https://archlinux.org/iso/latest/archlinux-$(date '+%Y.%m.01')-x86_64.iso"
+ISO_FILENAME="archlinux.iso"
+wget "$ISO_URL" -O "$ISO_FILENAME"
+
+# Create a directory to mount the ISO
+mkdir -p iso_mount
+
+# Mount the ISO
+mount -o loop "$ISO_FILENAME" iso_mount
+
+# Create a directory for Calamares custom configurations
+mkdir -p iso_mount/archiso
+
+# Create a custom Calamares configuration file
+cat > iso_mount/archiso/airootfs/etc/calamares/settings/40-custom-settings.conf <<EOL
+[General]
+autologinUser=true
+autoLoginSession=liveuser
+EOL
+
+# Unmount the ISO
+umount iso_mount
+
+# Create a new ISO image with the custom Calamares configuration
+ISO_CUSTOMIZED="archlinux-custom.iso"
+mkisofs -o "$ISO_CUSTOMIZED" -b isolinux/isolinux.bin -c isolinux/boot.cat -no-emul-boot -boot-load-size 4 -boot-info-table iso_mount
+
+# Clean up temporary files
+rm -r /tmp/calamares-arch-iso
+
+echo "Customized Arch Linux ISO with Calamares configuration created as $ISO_CUSTOMIZED"
