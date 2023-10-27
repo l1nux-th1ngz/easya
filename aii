@@ -1,5 +1,28 @@
 #!/bin/bash
 
+# Check if 'yay' is installed
+ISyay="/sbin/yay"
+
+if [ -f "$ISyay" ]; then
+    printf "\n%s - yay was located, moving on.\n" "$GREEN"
+else 
+    printf "\n%s - yay was NOT located\n" "$YELLOW"
+    read -n1 -rep "${CAT} Would you like to install yay (y,n)" INST
+    if [[ $INST =~ ^[Yy]$ ]]; then
+        git clone https://aur.archlinux.org/yay.git
+        cd yay
+        makepkg -si --noconfirm 2>&1 | tee -a $LOG
+        cd ..
+    else
+        printf "%s - yay is required for this script, now exiting\n" "$RED"
+        exit
+    fi
+
+    # Update the system after installing 'yay'
+    printf "${YELLOW} System Update to avoid issues\n" 
+    yay -Syu --noconfirm 2>&1 | tee -a $LOG
+fi
+
 # Set the working directory to the "Documents" folder for easier access
 WORKING_DIR="$HOME/Documents/calamares-arch-iso"
 mkdir -p "$WORKING_DIR"
