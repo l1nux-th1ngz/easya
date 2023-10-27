@@ -1,24 +1,29 @@
 #!/bin/bash
 
+# Set the working directory to the "Documents" folder for easier access
+WORKING_DIR="$HOME/Documents/calamares-arch-iso"
+mkdir -p "$WORKING_DIR"
+cd "$WORKING_DIR"
+
 # Create a directory to work in
-mkdir -p /tmp/calamares-arch-iso
+mkdir -p iso_mount
 
-# Change to the working directory
-cd /tmp/calamares-arch-iso
-
-# Download the Arch Linux ISO (Replace with the ISO URL you want)
-ISO_URL="https://archlinux.org/iso/latest/archlinux-$(date '+%Y.%m.01')-x86_64.iso"
+# Download the Arch Linux ISO (Replace with a valid URL)
+ISO_URL="http://mirror.arizona.edu/archlinux/iso/2023.10.14/archlinux-2023.10.14-x86_64.iso"
 ISO_FILENAME="archlinux.iso"
 wget "$ISO_URL" -O "$ISO_FILENAME"
 
-# Create a directory to mount the ISO
-mkdir -p iso_mount
+# Check if the download was successful
+if [ $? -ne 0 ]; then
+    echo "Failed to download the Arch Linux ISO. Please check the URL."
+    exit 1
+fi
 
 # Mount the ISO
 mount -o loop "$ISO_FILENAME" iso_mount
 
-# Create a directory for Calamares custom configurations
-mkdir -p iso_mount/archiso
+# Create necessary directories inside the ISO
+mkdir -p iso_mount/archiso/airootfs/etc/calamares/settings
 
 # Create a custom Calamares configuration file
 cat > iso_mount/archiso/airootfs/etc/calamares/settings/40-custom-settings.conf <<EOL
@@ -30,11 +35,14 @@ EOL
 # Unmount the ISO
 umount iso_mount
 
+# Check if 'genisoimage' is installed
+if ! command -v genisoimage &> /dev/null; then
+    echo "genisoimage is not installed. Please install it using your package manager."
+    exit 1
+fi
+
 # Create a new ISO image with the custom Calamares configuration
 ISO_CUSTOMIZED="archlinux-custom.iso"
-mkisofs -o "$ISO_CUSTOMIZED" -b isolinux/isolinux.bin -c isolinux/boot.cat -no-emul-boot -boot-load-size 4 -boot-info-table iso_mount
-
-# Clean up temporary files
-rm -r /tmp/calamares-arch-iso
+genisoimage -o "$ISO_CUSTOMIZED" -b isolinux/isolinux.bin -c isolinux/boot.cat -no-emul-boot -boot-load-size 4 -boot-info-table iso_mount
 
 echo "Customized Arch Linux ISO with Calamares configuration created as $ISO_CUSTOMIZED"
