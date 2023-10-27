@@ -56,8 +56,11 @@ EOL
 # Unmount the ISO
 umount iso_mount
 
-# Install mkisofs in the ISO
-sudo arch-chroot iso_mount /bin/bash -c "pacman -S cdrtools --noconfirm"
+# Check if 'mkisofs' is installed
+if ! command -v mkisofs &> /dev/null; then
+    echo "mkisofs is not installed. Please install it using your package manager."
+    exit 1
+fi
 
 # Create a new ISO image with the custom Calamares configuration
 ISO_CUSTOMIZED="archlinux-custom.iso"
