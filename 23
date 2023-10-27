@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
 # Welcome message
 echo -e "MyArchInstaller - Automated Arch Linux Installer\n"
