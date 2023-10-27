@@ -28,6 +28,9 @@ WORKING_DIR="$HOME/Documents/calamares-arch-iso"
 mkdir -p "$WORKING_DIR"
 cd "$WORKING_DIR"
 
+# Clone Calamares repository
+git clone https://github.com/calamares/calamares.git
+
 # Create a directory to work in and mount the ISO
 mkdir -p iso_mount
 mount -o loop "$ISO_FILENAME" iso_mount
